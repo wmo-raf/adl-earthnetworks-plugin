@@ -14,8 +14,9 @@ ISO_UTC = "%Y-%m-%dT%H:%M:%SZ"
 
 
 def _to_iso_utc(dt: datetime) -> str:
-    """Earth Networks accepts RFC1123 in examples, but ISO-8601 UTC works and is cleaner.
-    If you must send RFC1123 (Mon, 01 Sep 2025 00:00:00), build it with dt.strftime('%a, %d %b %Y %H:%M:%S').
+    """Earth Networks accepts RFC1123 in examples, but ISO-8601 UTC works and
+    is cleaner. To send RFC1123 (Mon, 01 Sep 2025 00:00:00) instead, build it
+    with dt.strftime('%a, %d %b %Y %H:%M:%S').
     """
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=timezone.utc)
@@ -45,7 +46,7 @@ class EarthNetworksClient:
     Expected JSON schema:
       Result -> HistoricalObservations -> [ { Observation: {...}, HighLow: {...} } ]
     """
-    
+
     def __init__(
             self,
             cfg: Optional[EarthNetworksConfig] = None,
@@ -53,7 +54,7 @@ class EarthNetworksClient:
     ) -> None:
         self.cfg = cfg or EarthNetworksConfig()
         self.session = session or self._build_session()
-    
+
     def _build_session(self) -> requests.Session:
         sess = requests.Session()
         retry = Retry(
@@ -70,7 +71,7 @@ class EarthNetworksClient:
         sess.mount("http://", adapter)
         sess.headers.update({"User-Agent": self.cfg.user_agent})
         return sess
-    
+
     def build_url(
             self,
             station_id: str,
@@ -88,9 +89,9 @@ class EarthNetworksClient:
             "enddatetime": _to_iso_utc(end_utc),
             "units": units or self.cfg.units,
         }
-        
+
         return f"{self.cfg.base_url}?{urlencode(params)}"
-    
+
     def fetch_raw(
             self,
             station_id: str,
@@ -107,9 +108,9 @@ class EarthNetworksClient:
         if code and int(code) != 200:
             raise RuntimeError(f"EarthNetworks returned non-200 Code: {code} {data.get('ErrorMessage')}")
         return data
-    
+
     # ---------- Normalization to ADL's StationRecordModel-like dicts ----------
-    
+
     def normalize(
             self, data: Dict
     ) -> Tuple[Dict, List[Dict]]:
@@ -121,7 +122,7 @@ class EarthNetworksClient:
         result = data.get("Result") or {}
         station = result.get("Station") or {}
         hist = result.get("HistoricalObservations") or []
-        
+
         station_meta = {
             "provider_id": station.get("ProviderId"),
             "provider_name": station.get("ProviderName"),
@@ -133,7 +134,7 @@ class EarthNetworksClient:
             "timezone": station.get("TimeZone"),
             "inactive": station.get("Inactive"),
         }
-        
+
         records: List[Dict] = []
         for item in hist:
             obs = (item or {}).get("Observation") or {}
@@ -149,7 +150,7 @@ class EarthNetworksClient:
             except Exception:
                 # Fallback: try trimming fractional seconds
                 obs_time = datetime.fromisoformat(ts_str.split(".")[0] + "+00:00")
-            
+
             # Extract common parameters
             temperature_c = self._unwrap(obs.get("TemperatureC"))
             rh = self._unwrap(obs.get("Humidity"))
@@ -158,7 +159,7 @@ class EarthNetworksClient:
             wind_dir = self._unwrap(obs.get("WindDirectionDegrees"))
             rain_day_mm = self._unwrap(obs.get("RainMillimetersDaily"))  # daily accumulation
             gust_kph = self._unwrap(obs.get("WindGustKphHourly"))  # last hour max
-            
+
             values: Dict[str, Optional[float]] = {
                 "air_temperature": temperature_c,
                 "relative_humidity": rh,
@@ -173,22 +174,22 @@ class EarthNetworksClient:
                 "altimeter": self._unwrap(obs.get("AltimeterMBar")),
                 "solar_radiation": self._unwrap(obs.get("SolarIrradiance")),
             }
-            
+
             records.append(
                 {
                     "observation_time": obs_time,
                     **values,
                 }
             )
-        
+
         return station_meta, records
-    
+
     @staticmethod
     def _unwrap(node) -> Optional[float]:
         """
         EN sometimes returns:
           - bare numbers: 21.3
-          - objects: { "Value": 21.3, "QcApplied": ..., "QcResult": ..., "QcDataDescriptor": ... }
+          - objects: { "Value": 21.3, "QcApplied": ..., "QcResult": ... }
           - nulls
         This helper extracts the numeric Value regardless of wrapper.
         """
@@ -203,9 +204,9 @@ class EarthNetworksClient:
             except (TypeError, ValueError):
                 return None
         return None
-    
+
     # ---------- High-level convenience ----------
-    
+
     def get_data(
             self,
             station_id: str,
