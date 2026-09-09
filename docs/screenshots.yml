@@ -1,0 +1,53 @@
+# Screenshot manifest for the ADL EarthNetworks Plugin guide (docs/guide.md).
+# Regenerate from the adl repo:  scripts/capture-plugin-docs.sh ../adl-plugins/adl-earthnetworks-plugin
+# Fixture: docs/screenshots/fixture.json (connection 1 = "EarthNetworks (demo)",
+# station link 1 = DEMO001).
+# The API host is hard-coded in the plugin (owc.enterprise.earthnetworks.com), so unlike
+# the other API plugins a mock cannot be pointed at by URL. This set is therefore
+# captured against the real service. The connection holds no credential — the model has
+# no key or password field and the request is an unauthenticated GET — so the only thing
+# a live run needs is a real station id, in EN_STATION_ID in
+# docs/screenshots/credentials.env, which is git-ignored. Without it the fixture's dummy
+# default is used and the run captures an honest station-not-found diagnostic.
+# Format: defaults + screenshots (name/url/setup/callouts/capture), run by adl's
+# docs/screenshots/capture/capture.py; output derives from name: docs/images/<name>.png.
+# Callouts are numbered badges/outlines only — never text in images.
+# Every entry has been run against the stack this file describes.
+
+defaults:
+  viewport:
+  - 1440
+  - 900
+  padding: 12
+screenshots:
+- name: earthnetworks_connection_form
+  url: /earthnetworksconnection/edit/1/
+  callouts:
+  - highlight: '#panel-variable_mappings-section'
+  capture:
+    selector: "#w-editor-form"
+- name: earthnetworks_station_link_form
+  url: /earthnetworksstationlink/edit/1/
+  setup:
+  # This set is captured against the real service, so the field holds the real
+  # station id of the account it ran against. Overwritten with a demo id the
+  # way a password field is; nothing else on the page is touched.
+  - fill: { selector: '#id_en_station_id', value: 'DEMO0001' }
+  callouts:
+  - badge: { target: '#id_en_station_id', n: 1 }
+  - badge: { target: '#id_start_date', n: 2 }
+  capture:
+    selector: "#w-editor-form"
+- name: earthnetworks_ingestion_diagnostic
+  url: /monitoring/connection/1/health/
+  capture:
+    selector: .health-diagnostic
+- name: earthnetworks_station_source_check
+  url: /earthnetworksstationlink/inspect/1/
+  setup:
+  # the message names the real station this ran against; the verdict, the
+  # latency and the wording are left exactly as the check produced them
+  - eval: "maskText('main', 'Station [A-Z0-9]+ found upstream', 'Station DEMO0001 found upstream')"
+  - eval: "maskText('main', 'found upstream as \"[^\"]*\"', 'found upstream as \"Demo Station 1\"')"
+  capture:
+    selector: ":nth-match(.collection-status, 2)"

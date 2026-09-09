@@ -1,0 +1,70 @@
+{
+  "capture": {
+    "connection": "EarthNetworks (demo)",
+    "ingest": true,
+    "probe": true,
+    "station_checks": [
+      "DEMO001"
+    ],
+    "wait": 240,
+    "present_interval": 15
+  },
+  "connection": {
+    "model": "adl_earthnetworks_plugin.EarthNetworksConnection",
+    "fields": {
+      "name": "EarthNetworks (demo)",
+      "plugin": "adl_earthnetworks_plugin",
+      "stations_timezone": "Africa/Nairobi",
+      "plugin_processing_interval": 1
+    },
+    "children": {
+      "variable_mappings": [
+        {
+          "adl_parameter": "Air Temperature",
+          "en_variable": "air_temperature",
+          "en_parameter_unit": "degC"
+        },
+        {
+          "adl_parameter": "Relative Humidity",
+          "en_variable": "relative_humidity",
+          "en_parameter_unit": "percent"
+        },
+        {
+          "adl_parameter": "Atmospheric Pressure",
+          "en_variable": "pressure_msl",
+          "en_parameter_unit": "hPa"
+        },
+        {
+          "adl_parameter": "Precipitation",
+          "en_variable": "precipitation_amount_daily",
+          "en_parameter_unit": "mm"
+        },
+        {
+          "adl_parameter": "Wind Speed",
+          "en_variable": "wind_speed",
+          "en_parameter_unit": "m/s"
+        },
+        {
+          "adl_parameter": "Wind Direction",
+          "en_variable": "wind_direction",
+          "en_parameter_unit": "degree"
+        },
+        {
+          "adl_parameter": "Solar Radiation",
+          "en_variable": "solar_radiation",
+          "en_parameter_unit": "W/m^2"
+        }
+      ]
+    }
+  },
+  "station_links": [
+    {
+      "model": "adl_earthnetworks_plugin.EarthNetworksStationLink",
+      "station": "DEMO001",
+      "fields": {
+        "en_station_id": "$ENV:EN_STATION_ID|DEMO0001",
+        "start_date": "$NOW-1d"
+      }
+    }
+  ]
+}
