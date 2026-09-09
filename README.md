@@ -1,92 +1,37 @@
 # ADL EarthNetworks Plugin
 
-ADL plugin for collecting data from EarthNetworks
+Collects observation data from the **EarthNetworks** observations service into
+an [ADL](https://github.com/wmo-raf/adl) instance. The service returns the same
+set of fields for every station, so variable mappings are defined once on the
+connection and apply to every station linked under it. On each collection cycle
+ADL reads each linked station's historical observations over the run's window,
+normalises them to metric units, and stores the mapped keys against your ADL
+stations and data parameters.
 
-## Getting started
+**Operator guide:** [docs/guide.md](docs/guide.md) — prerequisites,
+installation, every connection and station-link field, the record keys
+available for mapping, collection behaviour, diagnostics and troubleshooting.
+The guide is also published on the central ADL documentation site.
 
-### Prerequisites
+## Development setup
 
-- Docker and Docker Compose installed on your machine.
-- Git installed on your machine.
-
-### Install and build the ADL Core Image
-
-The ADL EarthNetworks Plugin is a module intended to be installed in an [ADL](https://github.com/wmo-raf/adl)
-instance. This means that you need to first get the core ADL system and build it on your local development environment.
-
-You can follow the instructions on the [ADL core repository](https://github.com/wmo-raf/adl) to install and build the
-ADL core image
-
-### Install ADL EarthNetworks Plugin
-
-The `dev.Dockerfile` file uses the `adl` image as a base image. The `ADL EarthNetworks Plugin` is
-installed during the build process. Using docker mounted volumes, the plugin is editable such that any changes made to
-the code trigger Django to reload the development server, allowing you to see the changes as you develop
-
-1. Clone the plugin repository:
+The plugin runs inside the ADL core image. Build the `adl:latest` image from
+the [ADL core repository](https://github.com/wmo-raf/adl) first, then:
 
 ```bash
 git clone https://github.com/wmo-raf/adl-earthnetworks-plugin.git
 cd adl-earthnetworks-plugin
-```
-
-2. Create a `.env` file using the provided `.env.sample` file:
-
-```bash
-cp .env.sample .env
-```
-
-3. Edit the `.env` file to set the required environment variables
-
-```bash
-nano .env
-```
-
-You can use the default values provided in the `.env.sample` file, but be sure to set the following correctly:
-
-- `PLUGIN_BUILD_UID`: The UID of the user that will run the plugin inside the container
-- `PLUGIN_BUILD_GID`: The GID of the user that will run the plugin inside the container
-
-You can find the UID and GID of your user by running the following command:
-
-```bash
-id -u
-id -g
-```
-
-4. Build the plugin image:
-
-```bash
+cp .env.sample .env        # set PLUGIN_BUILD_UID=$(id -u), PLUGIN_BUILD_GID=$(id -g), ADL_DB_PASSWORD
 docker compose build
-```
-
-If you are getting errors like
-`failed to solve: adl:latest: failed to resolve source metadata for docker.io/library/adl:latest: pull access denied`,
-you might need to disable `DOCKER_BUILDKIT` when building the image.
-
-You can do this by running the following
-
-```bash
-DOCKER_BUILDKIT=0  docker compose build
-```
-
-5. Start the plugin:
-
-```bash
 docker compose up
-```
-
-If everything is set up correctly, you should see the plugin starting up and listening for incoming requests. You can
-access the plugin at `http://localhost:8000`. The port number can be changed using the `PORT` environment variable in
-the `.env`. The default port is `8000`.
-
-6. Create superuser
-
-```bash
 docker compose exec adl adl createsuperuser
 ```
 
-The `adl`command is shorthand for `python manage.py` command. You can use it to run any Django management command
-inside the container.
+The admin is served on `PORT` (default 8080). The plugin source is
+bind-mounted, so code changes reload the dev server. If the build fails with
+`pull access denied` for `adl:latest`, prefix the build with
+`DOCKER_BUILDKIT=0`.
 
-
+Lint and format from `plugins/adl_earthnetworks_plugin/` with `make lint` and
+`make format`. See [CONTRIBUTING.md](CONTRIBUTING.md) — a change to any
+connection or station-link field must update the guide in the same PR.
